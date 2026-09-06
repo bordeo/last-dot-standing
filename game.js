@@ -10,6 +10,8 @@ let scores = Array(MAX_PLAYERS).fill(0), roundNumber = 0, countdown = 0;
 let inputs = [], previousStarts = new Map(), pads = new Map(), keys = new Set();
 let width = 0, height = 0, scale = 1, cx = 0, cy = 0;
 let particles = [], sound = false, audio = null, lastBump = 0;
+let shake = 0, effectTime = 0;
+const recentImpacts = new Map();
 let last = performance.now(), accumulator = 0, uiTick = 0, cachedStatus = '';
 
 const cards = roster.map((_, i) => {
@@ -81,12 +83,12 @@ function syncUI() {
 function enterLocal() {
   roster=Array(8).fill(null); scores=Array(8).fill(0); roundNumber=0;
   state='lobby'; paused=false; particles=[]; round=createRound(roster,true);
-  announce(); syncUI();
+  resetImpacts(); announce(); syncUI();
 }
 function returnAttract() {
   roster=Array.from({length:8},()=>({kind:'bot'})); scores=Array(8).fill(0);
   state='attract'; paused=false; roundNumber=0; particles=[];
-  round=createRound(roster,true); announce(); syncUI();
+  round=createRound(roster,true); resetImpacts(); announce(); syncUI();
 }
 function refreshLobby() { round=createRound(roster,true); syncUI(); }
 function addKeys(layout) {
@@ -103,7 +105,7 @@ function beginRound() {
     setText('status-text','Reconnect your controller, or go Back to set up a new group.'); return;
   }
   round=createRound(roster,$('freeplay').checked); particles=[]; paused=false;
-  countdown=3; state='countdown'; roundNumber++; accumulator=0;
+  countdown=3; state='countdown'; roundNumber++; accumulator=0; resetImpacts();
   announce('3','Get comfortable. Then get competitive.'); tone(440); syncUI();
 }
 function togglePause(reason='') {
@@ -211,11 +213,39 @@ function collectInputs() {
     return stick(Number((wasd&&keys.has('KeyD'))||(arrows&&keys.has('ArrowRight')))-Number((wasd&&keys.has('KeyA'))||(arrows&&keys.has('ArrowLeft'))), Number((wasd&&keys.has('KeyS'))||(arrows&&keys.has('ArrowDown')))-Number((wasd&&keys.has('KeyW'))||(arrows&&keys.has('ArrowUp'))));
   });
 }
+function resetImpacts() {
+  shake=0; recentImpacts.clear();
+}
+
+function sprinkleImpact(event) {
+  if(reducedMotion) return;
+  const key=event.slots.join(':');
+  // A pair can stay in contact for several physics steps. Make one clear burst.
+  if(effectTime-(recentImpacts.get(key) ?? -Infinity)<.09) return;
+  recentImpacts.set(key,effectTime);
+  const count=18+Math.round(event.strength*8);
+  const palette=event.slots.map(slot=>COLORS[slot]);
+  particles.push({x:event.x,y:event.y,life:.16,max:.16,color:'#242522',burst:false});
+  for(let i=0;i<count;i++) {
+    const angle=i/count*Math.PI*2+(Math.random()-.5)*.4;
+    const speed=.3+Math.random()*.7+event.strength*.18;
+    const life=.3+Math.random()*.32;
+    particles.push({kind:'sprinkle',x:event.x,y:event.y,
+      vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+      life,max:life,color:i%6===0?'#242522':palette[i%2],
+      size:1.7+Math.random()*1.9,angle,spin:(Math.random()-.5)*16,
+      round:i%3===0});
+  }
+  // Keep crowded eight-player collisions cheap and the shake very small.
+  if(particles.length>560) particles.splice(0,particles.length-560);
+  if(state==='playing') shake=Math.min(2,Math.max(shake,1.2+event.strength*.8));
+}
+
 function processEvents(events) {
   for(const e of events) {
     if(e.type==='bump') {
       if(performance.now()-lastBump>90 && state!=='attract') { tone(190,.045,.018); lastBump=performance.now(); }
-      if(!reducedMotion) particles.push({x:e.x,y:e.y,life:.18,max:.18,color:'#242522',burst:false});
+      sprinkleImpact(e);
     }
     if(e.type==='out') {
       tone(120,.22,.035);
@@ -236,7 +266,9 @@ function circle(x,y,r) { ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); }
 function draw() {
   ctx.clearRect(0,0,width,height);
   const r=round.radius*scale;
-  ctx.save(); ctx.translate(cx,cy);
+  const shakeX=!paused&&state==='playing'?Math.sin(effectTime*93)*shake:0;
+  const shakeY=!paused&&state==='playing'?Math.cos(effectTime*117)*shake*.65:0;
+  ctx.save(); ctx.translate(cx+shakeX,cy+shakeY);
   // The dashed line records the original arena; the solid line is the live boundary.
   ctx.setLineDash([8,13]); ctx.strokeStyle='#242522'; ctx.lineWidth=1.6;
   circle(0,0,scale+15); ctx.stroke(); ctx.setLineDash([]);
@@ -270,6 +302,13 @@ function draw() {
   }
   for(const p of particles) {
     const progress=1-p.life/p.max;
+    if(p.kind==='sprinkle') {
+      ctx.save(); ctx.translate(p.x*scale,p.y*scale); ctx.rotate(p.angle);
+      ctx.globalAlpha=Math.min(1,p.life/.18); ctx.fillStyle=p.color;
+      if(p.round) { circle(0,0,p.size*.65); ctx.fill(); }
+      else { ctx.fillRect(-p.size,-p.size*.38,p.size*2,p.size*.76); }
+      ctx.restore(); continue;
+    }
     ctx.globalAlpha=1-progress; ctx.strokeStyle=p.color; ctx.lineWidth=p.burst?2:1.4;
     for(let i=0;i<8;i++) {
       const a=i*Math.PI/4, inner=(p.burst?15:5)+progress*22, outer=inner+(p.burst?9:5);
@@ -283,6 +322,8 @@ function frame(now) {
   const dt=Math.min((now-last)/1000,.05); last=now;
   pollControllers(); collectInputs();
   if(!paused) {
+    effectTime+=dt;
+    shake=Math.max(0,shake-dt*16);
     if(state==='countdown') {
       const before=Math.ceil(countdown); countdown-=dt;
       if(countdown<=0) {state='playing';announce();tone(700,.15);syncUI();}
@@ -294,7 +335,14 @@ function frame(now) {
         if(state==='result') {accumulator=0;break;}
       }
     }
-    for(const p of particles) p.life-=dt;
+    for(const p of particles) {
+      p.life-=dt;
+      if(p.kind==='sprinkle') {
+        const drag=Math.exp(-3*dt);
+        p.vx*=drag; p.vy=p.vy*drag+.35*dt;
+        p.x+=p.vx*dt; p.y+=p.vy*dt; p.angle+=p.spin*dt;
+      }
+    }
     particles=particles.filter(p=>p.life>0);
   }
   for(const d of round.dots) if(!paused&&!reducedMotion) {

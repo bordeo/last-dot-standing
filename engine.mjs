@@ -85,7 +85,8 @@ export function step(round, inputs, dt) {
         a.vx -= nx*impulse; a.vy -= ny*impulse;
         b.vx += nx*impulse; b.vy += ny*impulse;
         a.bump = b.bump = .18;
-        events.push({ type:'bump', x:(a.x+b.x)/2, y:(a.y+b.y)/2 });
+        events.push({ type:'bump', x:(a.x+b.x)/2, y:(a.y+b.y)/2,
+          slots:[a.slot,b.slot], strength:Math.min(1,closing) });
       }
     }
   }
