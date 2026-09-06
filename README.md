@@ -6,6 +6,12 @@ A local browser party game for up to eight people. Plain HTML, CSS and Canvas. N
 
 Play solo with your keyboard, or connect controllers for local multiplayer. Eight physical controllers require a browser version and operating system that support them. All players share one computer and screen.
 
+## Watch the trailer
+
+[![Watch the Last Dot Standing trailer](media/trailer-poster.jpg)](https://bordeo.github.io/last-dot-standing/media/trailer.mp4)
+
+**[Watch the 30-second trailer](https://bordeo.github.io/last-dot-standing/media/trailer.mp4)** — 1080p, original music, and game-engine footage with computer-controlled players.
+
 ## Run locally
 
 From this folder:
@@ -46,6 +52,6 @@ These checks exercise eight simultaneous inputs, sparse controller indices, a ni
 
 ## Publish updates
 
-Push changes to `main`. The GitHub Actions workflow checks the JavaScript and runs the engine tests, then publishes the five game assets to GitHub Pages. Failed tests prevent deployment. You can also start it manually from the Actions tab.
+Push changes to `main`. The GitHub Actions workflow checks the JavaScript and runs the engine tests, then publishes the game assets and trailer to GitHub Pages. Failed tests prevent deployment. You can also start it manually from the Actions tab.
 
 The game runs under a repository subpath and uses relative asset URLs. It does not require a Chromium checkout or build to run.
