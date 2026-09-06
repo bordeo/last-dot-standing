@@ -49,7 +49,8 @@ function announce(title='', subtitle='') {
   if (!title) return;
   const strong = document.createElement('strong'), small = document.createElement('small');
   strong.textContent = title; small.textContent = subtitle;
-  $('announcement').append(strong,small);
+  $('announcement').append(strong);
+  if(subtitle) $('announcement').append(small);
 }
 function syncUI() {
   const initial = state === 'attract', waiting = state === 'lobby', finished = state === 'result';
@@ -64,15 +65,13 @@ function syncUI() {
   $('add-wasd').disabled = active || finished || roster.some(p=>p?.kind==='keys' && p.layout==='wasd') || count===8;
   $('add-arrows').disabled = active || finished || roster.some(p=>p?.kind==='keys' && p.layout==='arrows') || count===8;
   const mode = $('freeplay').checked;
-  setText('status-heading', initial ? 'COME ON IN' : waiting ? 'THE COUCH IS OPEN' : paused ? 'TAKE YOUR TIME' : finished ? 'ONE MORE?' : mode ? 'EVERYONE STAYS IN' : 'A LITTLE FRIENDLY CHAOS');
-  setText('status-text', initial ? 'Grab a controller, or take your keyboard for a spin.' : waiting ? `${count}/8 players joined. Press a controller button to join. Keyboard options are under How to play.` : paused ? pauseReason || 'Paused. Catch your breath, then resume.' : finished ? 'Scores stay with your player. Ready for a rematch?' : mode ? 'Move all eight dots. The player cards show live stick and button input.' : 'Left stick to move. Push other dots over the edge. Last dot inside wins.');
-  setText('round-label', initial ? 'WARM-UP' : waiting ? 'JOIN THE GAME' : mode ? 'FREE PLAY' : `ROUND ${String(roundNumber).padStart(2,'0')}`);
-  setText('arena-caption', initial ? 'Good friends push each other. Literally.' : mode ? 'Room for everyone. No knockouts, no timer.' : 'The solid line is the edge. Keep your dot inside.');
+  setText('status-text', initial ? 'WASD / arrow keys or controllers.' : waiting ? `${count}/8 joined · Press a controller button to join.` : paused || finished || mode ? '' : 'Push other players outside the line.');
+  setText('round-label', initial ? 'DEMO' : waiting ? 'LOBBY' : mode ? 'FREE PLAY' : `ROUND ${String(roundNumber).padStart(2,'0')}`);
   for (let i=0;i<8;i++) {
     const p=roster[i], card=cards[i], dot=round.dots.find(d=>d.slot===i);
-    const source=!p ? 'PRESS TO JOIN' : p.kind==='bot' ? 'CPU' : p.kind==='keys' ? (p.layout==='wasd' ? 'WASD' : p.layout==='both' ? 'WASD / ↑↓←→' : 'ARROW KEYS') : p.connected ? `PAD ${p.padIndex+1}` : 'DISCONNECTED';
+    const source=!p ? 'OPEN' : p.kind==='bot' ? 'CPU' : p.kind==='keys' ? (p.layout==='wasd' ? 'WASD' : p.layout==='both' ? 'WASD / ↑↓←→' : 'ARROW KEYS') : p.connected ? `PAD ${p.padIndex+1}` : 'DISCONNECTED';
     card.source.textContent=source;
-    card.score.textContent= p ? `${scores[i]} ${scores[i]===1?'win':'wins'}` : '—';
+    card.score.textContent= p && scores[i] ? `${scores[i]} ${scores[i]===1?'win':'wins'}` : '';
     card.el.classList.toggle('empty',!p);
     card.el.classList.toggle('out',!!p && ((active||finished) && dot && !dot.alive));
     card.el.title=p?.kind==='pad' ? p.id : source;
@@ -106,7 +105,7 @@ function beginRound() {
   }
   round=createRound(roster,$('freeplay').checked); particles=[]; paused=false;
   countdown=3; state='countdown'; roundNumber++; accumulator=0; resetImpacts();
-  announce('3','Get comfortable. Then get competitive.'); tone(440); syncUI();
+  announce('3'); tone(440); syncUI();
 }
 function togglePause(reason='') {
   if(!['playing','countdown'].includes(state)) return;
@@ -191,7 +190,7 @@ function pollControllers() {
   if(changed) syncUI();
   const unassigned=raw.filter(pad=>!roster.some(p=>p?.kind==='pad'&&p.padIndex===pad.index)).length;
   const count=raw.length;
-  const message=count ? `${count} physical controller${count===1?'':'s'} visible to this browser.${unassigned&&['playing','countdown','result'].includes(state)?' New controllers can join in the lobby.':count>8?' The arena has eight slots; extra controllers stay out.':' Press a button to join in the lobby.'}` : 'Controllers join when you press a button. Nothing leaves this device.';
+  const message=count ? `${count} controller${count===1?'':'s'} detected.${unassigned&&['playing','countdown','result'].includes(state)?' New players can join in the lobby.':count>8?' Only eight can join.':''}` : '';
   if(message!==cachedStatus) { cachedStatus=message; setText('device-status',message); }
 }
 
@@ -256,7 +255,7 @@ function processEvents(events) {
       state='result';
       for(const slot of e.winners) scores[slot]++;
       const title=e.winners.length===1?`P${e.winners[0]+1} wins!`:e.winners.length?'Shared win!':'Nobody wins!';
-      const subtitle=e.winners.length>1?`Players ${e.winners.map(s=>s+1).join(', ')} survived. Next round?`:e.winners.length?'Friendship: temporarily on hold.':'A spectacular mutual misunderstanding.';
+      const subtitle=e.winners.length>1?`Players ${e.winners.map(s=>s+1).join(', ')}`:'';
       announce(title,subtitle); tone(780,.4,.04); syncUI();
     }
   }
@@ -327,7 +326,7 @@ function frame(now) {
     if(state==='countdown') {
       const before=Math.ceil(countdown); countdown-=dt;
       if(countdown<=0) {state='playing';announce();tone(700,.15);syncUI();}
-      else if(Math.ceil(countdown)!==before) {announce(String(Math.ceil(countdown)),'Get comfortable. Then get competitive.');tone(440);}
+      else if(Math.ceil(countdown)!==before) {announce(String(Math.ceil(countdown)));tone(440);}
     } else if(state==='playing'||state==='attract') {
       accumulator+=dt;
       while(accumulator>=1/120) {
@@ -352,9 +351,8 @@ function frame(now) {
   if(uiTick>.08) {
     uiTick=0;
     setText('timer',round.freePlay&&state!=='attract'&&state!=='lobby'?'∞':`00:${String(state==='attract'||state==='lobby'?30:Math.max(0,Math.ceil(DURATION-round.elapsed))).padStart(2,'0')}`);
-    setText('clock-caption',round.freePlay&&!['attract','lobby'].includes(state)?'ROOM FOR EVERYONE':'SECONDS TO SURVIVE');
     const alive=round.dots.filter(d=>d.alive).length;
-    setText('alive',state==='attract'?'8 dots. No hard feelings.':`${alive} of ${round.dots.length} in the arena`);
+    setText('alive',['attract','lobby'].includes(state)?'':`${alive} left`);
     cards.forEach((c,i)=>{
       const input=inputs[i]||{x:0,y:0};
       c.meter.style.transform=`translate(${input.x*7}px,${input.y*7}px)`;

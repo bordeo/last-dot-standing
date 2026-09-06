@@ -5,35 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f8f2e7">
   <meta name="description" content="Eight friends. One arena. A free local multiplayer browser game: move, bump, and be the last dot standing. Play solo or bring your controllers.">
-  <title>Last Dot Standing — Eight friends. One arena.</title>
+  <title>Last Dot Standing</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="game-shell">
     <header class="masthead">
-      <a class="wordmark" href="./" aria-label="Last Dot Standing home"><span class="edition">THE LOCAL MULTIPLAYER CLUB</span><h1>LAST DOT<br>STANDING<span class="title-dot">.</span></h1><p>Eight friends. One arena.</p></a>
-      <div class="top-actions"><span class="local-badge"><i></i> ALL TOGETHER. ALL LOCAL.</span><button id="sound" class="icon-button" aria-pressed="false" title="Toggle sound">Sound off</button><button id="fullscreen" class="icon-button" title="Toggle fullscreen">Full screen ↗</button></div>
+      <a class="wordmark" href="./" aria-label="Last Dot Standing home"><h1>LAST DOT<br>STANDING<span class="title-dot">.</span></h1></a>
+      <div class="top-actions"><button id="sound" class="icon-button" aria-pressed="false" title="Toggle sound">Sound off</button><button id="fullscreen" class="icon-button" title="Toggle fullscreen">Full screen ↗</button></div>
     </header>
 
     <section class="playfield" aria-label="Game arena">
       <canvas id="arena" aria-label="Eight-player game arena. Use your controller's left stick or keyboard arrow keys to move."></canvas>
-      <aside class="round-info"><div class="clock"><span id="timer">00:30</span><span class="clock-caption" id="clock-caption">SECONDS TO SURVIVE</span></div><span class="round-label" id="round-label">WARM-UP</span><p id="alive">8 dots. No hard feelings.</p></aside>
-      <aside class="arena-note"><span class="note-number">01 — 08</span><p>A little friendly<br>competition.</p><span class="hand-arrow">↘</span></aside>
+      <aside class="round-info"><div class="clock"><span id="timer">00:30</span></div><span class="round-label" id="round-label">DEMO</span><p id="alive"></p></aside>
       <div id="announcement" class="announcement" aria-live="polite"></div>
-      <div class="arena-caption"><span class="tiny-cross">✳</span><span id="arena-caption">Good friends push each other. Literally.</span></div>
     </section>
 
     <section class="control-desk" aria-label="Game controls">
-      <div class="status"><span class="eyebrow" id="status-heading">COME ON IN</span><p id="status-text">Grab a controller, or take your keyboard for a spin.</p></div>
+      <div class="status"><p id="status-text">WASD / arrow keys or controllers.</p></div>
       <div class="actions"><button id="solo" class="button primary">Play solo <span>↗</span></button><button id="local" class="button secondary">Local multiplayer</button><button id="start" class="button primary" hidden>Start round <span>→</span></button><button id="pause" class="button secondary" hidden>Pause</button><button id="lobby" class="button secondary" hidden>Leave round</button></div>
     </section>
 
     <section id="players" class="players" aria-label="Eight player slots"></section>
-    <footer><div class="rules"><span>MOVE</span><b>•</b><span>BUMP</span><b>•</b><span>STAY IN</span></div><label class="free-play"><input id="freeplay" type="checkbox"><span class="toggle"></span>Free play <span class="hint">/ no knockouts</span></label><button id="help-toggle" class="help-button" aria-expanded="false" aria-controls="help">How to play <span>↗</span></button></footer>
-    <section id="help" class="help" hidden><div><h2>One stick. That’s it.</h2><p>Move with the left stick or D-pad. Push other dots past the solid line. The arena shrinks over 30 seconds. Last dot inside wins. Ties share the win.</p></div><div><h2>Bring the whole couch.</h2><p>Choose Local multiplayer, then press a button on each controller to join. Press Start on a controller or click Start round when two players have joined. Keyboard players use WASD and arrow keys; add them with the buttons below.</p><button id="add-wasd" class="text-button">+ WASD player</button><button id="add-arrows" class="text-button">+ Arrow-key player</button></div><div><h2>Try all eight.</h2><p>Free play keeps every player in the arena. Player cards show live stick and button input. CPU means a computer player, not a connected controller. Your browser and operating system determine how many physical controllers are exposed.</p><p>Space pauses. R starts another round after a result. Leaving the tab pauses the game.</p></div></section>
-    <p id="device-status" class="device-status" aria-live="polite">Controllers join when you press a button. Nothing leaves this device.</p>
-    <p class="device-status">Play solo with your keyboard. Eight physical controllers require a browser version and operating system that support them.</p>
+    <footer><label class="free-play"><input id="freeplay" type="checkbox"><span class="toggle"></span>Free play <span class="hint">/ no knockouts</span></label><button id="help-toggle" class="help-button" aria-expanded="false" aria-controls="help">How to play <span>↗</span></button></footer>
+    <section id="help" class="help" hidden><div><h2>Controls</h2><p>Move with the left stick, D-pad, WASD, or arrow keys. Push others outside the shrinking arena. Last player inside wins; ties share the win.</p><p>Space or controller Start pauses. R starts the next round.</p></div><div><h2>Multiplayer</h2><p>Press a controller button to join. With two players, click Start round or press controller Start. Add keyboard players below.</p><button id="add-wasd" class="text-button">+ WASD player</button><button id="add-arrows" class="text-button">+ Arrow-key player</button><p>Eight physical controllers need a compatible browser and operating system.</p></div><div><h2>Free play</h2><p>No timer or knockouts. Start with one or more players. Player cards show live inputs; CPU means a computer player.</p></div></section>
+    <p id="device-status" class="device-status" aria-live="polite"></p>
   </main>
   <script type="module" src="game.js"></script>
 </body>
