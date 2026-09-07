@@ -2,6 +2,9 @@ export const COLORS = ['#e65d44','#327fe4','#edbc24','#8953ad','#7a9e42','#f58b1
 export const DURATION = 30;
 export const MAX_PLAYERS = 8;
 export const DOT_RADIUS = 0.075;
+export const MAX_MOVE_SPEED = 1.45;
+const ACCELERATION_RESPONSE = 1.7;
+const BRAKING_RESPONSE = 3.6;
 
 export function stick(x = 0, y = 0) {
   const length = Math.hypot(x, y);
@@ -60,10 +63,14 @@ export function step(round, inputs, dt) {
     d.bump = Math.max(0, d.bump - dt);
     if (!d.alive) continue;
     const input = inputs[d.slot] || { x: 0, y: 0 };
-    d.vx += input.x * 2.7 * dt;
-    d.vy += input.y * 2.7 * dt;
-    const friction = Math.exp(-3 * dt);
-    d.vx *= friction; d.vy *= friction;
+    const magnitude = Math.hypot(input.x,input.y);
+    const normalization = Math.max(1,magnitude);
+    const response = magnitude > 0 ? ACCELERATION_RESPONSE : BRAKING_RESPONSE;
+    const blend = 1 - Math.exp(-response*dt);
+    // Build momentum toward the stick's target speed. Collision knockback can
+    // exceed running speed and settles naturally, without an abrupt speed clamp.
+    d.vx += (input.x/normalization*MAX_MOVE_SPEED-d.vx)*blend;
+    d.vy += (input.y/normalization*MAX_MOVE_SPEED-d.vy)*blend;
     d.x += d.vx * dt; d.y += d.vy * dt;
   }
   for (let i = 0; i < round.dots.length; i++) {
@@ -81,12 +88,16 @@ export function step(round, inputs, dt) {
       b.x += nx*overlap; b.y += ny*overlap;
       const closing = (a.vx-b.vx)*nx + (a.vy-b.vy)*ny;
       if (closing > 0) {
-        const impulse = Math.min(1.6, closing * 0.95 + 0.16);
+        // Only the speed into the opponent counts. Fast direct hits get a little
+        // extra bounce; glancing hits and gentle nudges transfer less momentum.
+        const strength = Math.min(1,closing/MAX_MOVE_SPEED);
+        const restitution = .6 + .55*strength;
+        const impulse = Math.min(3.5,closing*(1+restitution)/2);
         a.vx -= nx*impulse; a.vy -= ny*impulse;
         b.vx += nx*impulse; b.vy += ny*impulse;
         a.bump = b.bump = .18;
         events.push({ type:'bump', x:(a.x+b.x)/2, y:(a.y+b.y)/2,
-          slots:[a.slot,b.slot], strength:Math.min(1,closing) });
+          slots:[a.slot,b.slot], strength });
       }
     }
   }

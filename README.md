@@ -24,7 +24,7 @@ Open <http://localhost:8088>. Use HTTP localhost rather than opening `index.html
 
 - **Play solo:** one keyboard player (WASD or arrow keys) and seven computer players.
 - **Local multiplayer:** press a button on each connected controller to join. Start a round with two or more players, using the on-screen button or a joined controller's Start button. Add up to two keyboard players under How to play.
-- **Move:** left stick or D-pad. Push opponents over the solid boundary. It shrinks for 30 seconds; the last dot inside wins. Survivors at the time limit share a win. Scores persist across rounds, until you go Back to the opening screen.
+- **Move:** left stick or D-pad. Hold a direction to build speed; faster direct hits push opponents farther. Release to brake, or steer against your momentum to turn. Push opponents over the solid boundary. It shrinks for 30 seconds; the last dot inside wins. Survivors at the time limit share a win. Scores persist across rounds, until you go Back to the opening screen.
 - **Free play:** no elimination, shrink, or time limit. Can start with one player. Changing the mode during play begins a fresh round.
 - **Pause:** Space, the on-screen button, or controller Start. R starts the next round after a result. Hiding the tab pauses; controller disconnection pauses until reconnection or leaving the round.
 - **Sound/full screen:** optional controls at the top of the page. Sound starts off.
